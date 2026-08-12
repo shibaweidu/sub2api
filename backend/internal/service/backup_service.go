@@ -31,6 +31,7 @@ const (
 
 	maxBackupRecords           = 100
 	backupObjectCleanupTimeout = 2 * time.Minute
+	backupOperationTimeout     = 2 * time.Hour
 )
 
 var (
@@ -464,7 +465,7 @@ func (s *BackupService) runScheduledBackup() {
 	s.wg.Add(1)
 	defer s.wg.Done()
 
-	ctx, cancel := context.WithTimeout(s.bgCtx, 30*time.Minute)
+	ctx, cancel := context.WithTimeout(s.bgCtx, backupOperationTimeout)
 	defer cancel()
 
 	// 读取定时备份配置中的过期天数
@@ -675,7 +676,7 @@ func (s *BackupService) StartBackup(ctx context.Context, triggeredBy string, exp
 
 // executeBackup 后台执行备份（独立于 HTTP context）
 func (s *BackupService) executeBackup(record *BackupRecord, objectStore BackupObjectStore, s3Cfg *BackupS3Config) {
-	ctx, cancel := context.WithTimeout(s.bgCtx, 30*time.Minute)
+	ctx, cancel := context.WithTimeout(s.bgCtx, backupOperationTimeout)
 	defer cancel()
 
 	// 阶段1: pg_dump -> gzip 临时文件
@@ -950,7 +951,7 @@ func (s *BackupService) StartRestore(ctx context.Context, backupID string) (*Bac
 
 // executeRestore 后台执行恢复
 func (s *BackupService) executeRestore(record *BackupRecord, objectStore BackupObjectStore) {
-	ctx, cancel := context.WithTimeout(s.bgCtx, 30*time.Minute)
+	ctx, cancel := context.WithTimeout(s.bgCtx, backupOperationTimeout)
 	defer cancel()
 
 	if len(record.Parts) > 0 {
